@@ -1,5 +1,3 @@
-from datetime import date
-
 class Empleado:
     def __init__(self, run, nombre, direccion, telefono, correo, fecha_inicio, salario, departamento_id, id=None):
         self.run = run

@@ -1,5 +1,3 @@
-from datetime import date
-
 class AsignacionEmp:
     def __init__(self, empleado_id, proyecto_id, fecha_asignacion, rol, id=None):
         self.empleado_id = empleado_id

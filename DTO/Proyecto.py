@@ -1,5 +1,3 @@
-from datetime import date
-
 class Proyecto:
     def __init__(self, nombre, descripcion, fecha_inicio, id=None):
         self.nombre = nombre
