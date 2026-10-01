@@ -1,156 +1,672 @@
-import os
-import DAO.CRUDCliente
-from DTO.Cliente import Cliente
+import os, re
+from datetime import datetime
 
-# TIPOS DE CLIENTES
-TIPOS = {
-    1: "Cliente Normal",
-    2: "VIP",
-    3: "Empresa"
-}
+from DAO import CRUDAsignacion_emp, CRUDDepartamento, CRUDEmpleado, CRUDProyecto, CRUDTiempo
+from DTO.AsignacionEmp import AsignacionEmp
+from DTO.Departamento import Departamento
+from DTO.Empleado import Empleado
+from DTO.Proyecto import Proyecto
+from DTO.RegistroTiempo import RegistroTiempo
 
-# MENÚ PRINCIPAL
-def menuPrincipal():
-    os.system('cls')
-    print("======================")
-    print("    MENÚ PRINCIPAL    ")
-    print("======================")
-    print("1. INGRESAR CLIENTE")
-    print("2. MOSTRAR CLIENTES")
-    print("3. MODIFICAR CLIENTE")
-    print("4. ELIMINAR CLIENTE")
-    print("5. SALIR")
-    print("======================")
+def limpiar_pantalla():
+    os.system("cls")
 
-# INGRESAR CLIENTE Y SUS DATOS
-def ingresarDatos():
-    os.system('cls')
-    print("======================")
-    print("   INGRESAR CLIENTE   ")
-    print("======================")
+def pausa():
+    input("\nPresione una tecla para continuar...")
 
-    run = input("RUN: ")
-    nombre = input("NOMBRE: ")
-    apellido = input("APELLIDO: ")
-    direccion = input("DIRECCIÓN: ")
-    fono = input("TELÉFONO: ")
-    correo = input("CORREO: ")
-
-    datos = DAO.CRUDCliente.mostrarTipos()
-
-    print("=====================")
-    for d in datos:
-        print(f"{d[0]} - {d[1]}")
-    print("=====================")
-
-    # VALIDACIÓN FUERTE (IMPORTANTE)
-    tipo = 0
-    while tipo not in TIPOS:
+def leer_entero(mensaje, minimo=None, maximo=None, permitir_vacio=False, valor_por_defecto=None):
+    while True:
+        texto = input(mensaje).strip()
+        if permitir_vacio and texto == "":
+            return valor_por_defecto
         try:
-            tipo = int(input("TIPO CLIENTE (1-3): "))
-        except:
-            tipo = 0
+            valor = int(texto)
+            if minimo is not None and valor < minimo:
+                print(f"Debe ser mayor o igual a {minimo}.")
+                continue
+            if maximo is not None and valor > maximo:
+                print(f"Debe ser menor o igual a {maximo}.")
+                continue
+            return valor
+        except ValueError:
+            print("Ingrese un número válido.")
 
-    monto = int(input("MONTO CRÉDITO: "))
-    cliente = Cliente(run, nombre, apellido, direccion, fono, correo, monto, 0, tipo)
-    ok = DAO.CRUDCliente.agregar(cliente)
+def leer_texto(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    texto = input(mensaje).strip()
+    if texto == "" and permitir_vacio:
+        return valor_por_defecto
+    return texto
 
-    print("\nCLIENTE INGRESADO CORRECTAMENTE" if ok else "\nERROR AL INGRESAR CLIENTE")
-    input("\nPRESIONE UNA TECLA PARA CONTINUAR...")
+def leer_fecha(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    while True:
+        texto = input(mensaje).strip()
+        if permitir_vacio and texto == "":
+            return valor_por_defecto
+        try:
+            return datetime.strptime(texto, "%Y-%m-%d").date()
+        except ValueError:
+            print("Ingrese una fecha válida con formato YYYY-MM-DD.")
 
-# MOSTRAR LA LISTA DE CLIENTES
-def mostrarTodo():
-    os.system('cls')
-    print("=" * 140)
-    print("   LISTA DE CLIENTES   ")
-    print("=" * 140)
+def leer_run(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    patron = re.compile(r"^[0-9]{7,8}-[0-9kK]$")
+    while True:
+        texto = input(mensaje).strip()
+        if permitir_vacio and texto == "":
+            return valor_por_defecto
+        if patron.match(texto):
+            return texto
+        print("RUN inválido. Use formato 12345678-9.")
 
-    print("{:<3} {:<12} {:<10} {:<10} {:<15} {:<10} {:<20} {:<10} {:<8} {:<20}".format(
-        "ID", "RUN", "NOMBRE", "APELLIDO", "DIRECCION", "FONO", "CORREO", "CREDITO", "DEUDA", "TIPO"
-    ))
+def leer_correo(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    patron = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    while True:
+        texto = input(mensaje).strip()
+        if permitir_vacio and texto == "":
+            return valor_por_defecto
+        if patron.match(texto):
+            return texto
+        print("Correo inválido. Ejemplo: nombre@correo.com")
 
-    print("=" * 140)
+def leer_telefono(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    patron = re.compile(r"^[0-9]{7,15}$")
+    while True:
+        texto = input(mensaje).strip()
+        if permitir_vacio and texto == "":
+            return valor_por_defecto
+        if patron.match(texto):
+            return int(texto)
+        print("Telefono inválido. Ingrese solo números, entre 7 y 15 dígitos.")
 
-    datos = DAO.CRUDCliente.mostrarTodos()
-
-    TIPOS = {
-        "Cliente Normal": "1 - Cliente Normal",
-        "VIP": "2 - VIP",
-        "Empresa": "3 - Empresa"
-    }
-
-    for d in datos:
-        tipo_nombre = TIPOS.get(d[9], f"0 - {d[9]}")
-        print("{:<3} {:<12} {:<10} {:<10} {:<15} {:<10} {:<20} {:<10} {:<8} {:<20}".format(
-            d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], tipo_nombre
-        ))
-
-    input("\nPRESIONE UNA TECLA PARA CONTINUAR...")
-
-# MODIFICAR DATOS DE UN CLIENTE
-def modificarCliente():
-    os.system('cls')
-    mostrarTodo()
-
-    idc = int(input("\nID A MODIFICAR: "))
-    datos = DAO.CRUDCliente.consultaParticular(idc)
-
+def mostrar_departamentos_existentes():
+    datos = CRUDDepartamento.mostrarTodos()
     if not datos:
-        print("CLIENTE NO ENCONTRADO")
-        input("PRESIONE UNA TECLA PARA CONTINUAR...")
+        print("No hay departamentos registrados.")
+        return False
+
+    print("\nDepartamentos disponibles:")
+    for departamento in datos:
+        print(f"{departamento[0]} - {departamento[1]}")
+    return True
+
+def mostrar_empleados_existentes():
+    datos = CRUDEmpleado.mostrarTodos()
+    if not datos:
+        print("No hay empleados registrados.")
+        return False
+
+    print("\nEmpleados disponibles:")
+    for empleado in datos:
+        print(f"{empleado[0]} - {empleado[2]}")
+    return True
+
+def mostrar_proyectos_existentes():
+    datos = CRUDProyecto.mostrarTodos()
+    if not datos:
+        print("No hay proyectos registrados.")
+        return False
+
+    print("\nProyectos disponibles:")
+    for proyecto in datos:
+        print(f"{proyecto[0]} - {proyecto[1]}")
+    return True
+
+def menu_principal():
+    print("==============================")
+    print("        MENÚ PRINCIPAL        ")
+    print("==============================")
+    print("1. Gestión de Empleados")
+    print("2. Gestión de Departamentos")
+    print("3. Gestión de Proyectos")
+    print("4. Registro de Tiempo")
+    print("5. Asignación de empleado a proyectos")
+    print("6. Salir")
+    print("==============================")
+
+def menu_empleados():
+    print("=== Empleados ===")
+    print("1. Ingresar empleado")
+    print("2. Mostrar todos")
+    print("3. Mostrar uno")
+    print("4. Modificar")
+    print("5. Eliminar")
+    print("6. Volver")
+    print("==============")
+
+def menu_departamentos():
+    print("=== Departamentos ===")
+    print("1. Ingresar departamento")
+    print("2. Mostrar todos")
+    print("3. Mostrar uno")
+    print("4. Modificar")
+    print("5. Eliminar")
+    print("6. Volver")
+    print("=================")
+
+def menu_proyectos():
+    print("=== Proyectos ===")
+    print("1. Ingresar proyecto")
+    print("2. Mostrar todos")
+    print("3. Modificar")
+    print("4. Eliminar")
+    print("5. Volver")
+    print("=============")
+
+def menu_tiempo():
+    print("=== Registro de Tiempo ===")
+    print("1. Ingresar registro")
+    print("2. Mostrar por empleado")
+    print("3. Volver")
+    print("=================")
+
+def menu_asignacion():
+    print("=== Asignaciones Empleado-Proyecto ===")
+    print("1. Asignar")
+    print("2. Desasignar")
+    print("3. Mostrar por empleado")
+    print("4. Volver")
+    print("====================================")
+
+def ingresar_empleado():
+    limpiar_pantalla()
+    print("=== Empleados ===")
+
+    if not CRUDDepartamento.existe_departamentos():
+        print("No se puede ingresar un empleado si no existen departamentos.")
+        pausa()
         return
 
-    tipo = 0
-    while tipo not in TIPOS:
-        try:
-            tipo = int(input(f"Tipo [{datos[9]}]: "))
-        except:
-            tipo = datos[9]
+    run = leer_run("RUN: ")
+    nombre = leer_texto("Nombre: ")
+    direccion = leer_texto("Direccion: ")
+    telefono = leer_telefono("Telefono: ")
+    correo = leer_correo("Correo: ")
+    fecha_inicio = leer_fecha("Fecha de inicio (YYYY-MM-DD): ")
+    salario = leer_entero("Salario: ", minimo=0)
 
-    cliente = Cliente(
-        datos[1],
-        input(f"Nombre [{datos[2]}]: ") or datos[2],
-        input(f"Apellido [{datos[3]}]: ") or datos[3],
-        input(f"Dirección [{datos[4]}]: ") or datos[4],
-        input(f"Teléfono [{datos[5]}]: ") or datos[5],
-        input(f"Correo [{datos[6]}]: ") or datos[6],
-        int(input(f"Monto Crédito [{datos[7]}]: ") or datos[7]),
-        int(input(f"Deuda [{datos[8]}]: ") or datos[8]),
-        tipo
-    )
+    mostrar_departamentos_existentes()
+    departamento_id = leer_entero("Departamento ID: ", minimo=1)
+    if not CRUDEmpleado.existe_departamento(departamento_id):
+        print("El departamento indicado no existe.")
+        pausa()
+        return
 
-    cliente.id = datos[0]
-    DAO.CRUDCliente.editar(cliente)
+    empleado = Empleado(run, nombre, direccion, telefono, correo, fecha_inicio, salario, departamento_id)
+    nuevo_id = CRUDEmpleado.agregar(empleado)
 
-    print("\nCLIENTE MODIFICADO CORRECTAMENTE")
-    input("\nPRESIONE UNA TECLA PARA CONTINUAR...")
-
-# ELIMINAR CLIENTE
-def eliminarCliente():
-    os.system('cls')
-    mostrarTodo()
-
-    idc = int(input("\nID DE CLIENTE A ELIMINAR: "))
-    DAO.CRUDCliente.eliminar(idc)
-
-    print("\nCLIENTE ELIMINADO CORRECTAMENTE" if idc else "\nERROR AL ELIMINAR CLIENTE")
-    input("\nPRESIONE UNA TECLA PARA CONTINUAR...")
-
-# MENÚ
-while True:
-    menuPrincipal()
-    opcion = int(input("SELECCIONE UNA OPCIÓN: "))
-
-    if opcion == 1:
-        ingresarDatos()
-    elif opcion == 2:
-        mostrarTodo()
-    elif opcion == 3:
-        modificarCliente()
-    elif opcion == 4:
-        eliminarCliente()
-    elif opcion == 5:
-        break
+    if nuevo_id:
+        print(f"Empleado ingresado correctamente. ID: {nuevo_id}")
     else:
-        print("OPCIÓN INVÁLIDA")
-        input("PRESIONE UNA TECLA PARA VOLVER A INTENTARLO...")
+        print("No se pudo ingresar el empleado.")
+    pausa()
+
+def mostrar_empleados():
+    limpiar_pantalla()
+    print("=== Empleados ===")
+    datos = CRUDEmpleado.mostrarTodos()
+
+    if not datos:
+        print("No hay empleados registrados.")
+        pausa()
+        return
+
+    print("{:<5} {:<15} {:<25} {:<20} {:<12} {:<25} {:<12} {:<12} {:<14} {:<20}".format(
+        "ID", "RUN", "NOMBRE", "DIRECCION", "TELF", "CORREO", "INICIO", "SALARIO", "DEPTO ID", "DEPTO"
+    ))
+    for empleado in datos:
+        print("{:<5} {:<15} {:<25} {:<20} {:<12} {:<25} {:<12} {:<12} {:<14} {:<20}".format(
+            empleado[0], empleado[1], empleado[2], empleado[3], empleado[4], empleado[5], empleado[6], empleado[7], empleado[8], empleado[9]
+        ))
+    pausa()
+
+def mostrar_un_empleado():
+    limpiar_pantalla()
+    print("=== Empleados ===")
+    empleado_id = leer_entero("ID del empleado: ", minimo=1)
+    empleado = CRUDEmpleado.consultaParticular(empleado_id)
+
+    if not empleado:
+        print("Empleado no encontrado.")
+        pausa()
+        return
+
+    print(f"ID: {empleado[0]}")
+    print(f"RUN: {empleado[1]}")
+    print(f"Nombre: {empleado[2]}")
+    print(f"Direccion: {empleado[3]}")
+    print(f"Telefono: {empleado[4]}")
+    print(f"Correo: {empleado[5]}")
+    print(f"Fecha inicio: {empleado[6]}")
+    print(f"Salario: {empleado[7]}")
+    print(f"Departamento ID: {empleado[8]}")
+    print(f"Departamento: {empleado[9]}")
+    pausa()
+
+def modificar_empleado():
+    limpiar_pantalla()
+    print("=== Empleados ===")
+    empleado_id = leer_entero("ID del empleado a modificar: ", minimo=1)
+    datos = CRUDEmpleado.consultaParticular(empleado_id)
+
+    if not datos:
+        print("Empleado no encontrado.")
+        pausa()
+        return
+
+    print("Deje vacio para mantener el valor actual.")
+    run = leer_run(f"RUN [{datos[1]}]: ", permitir_vacio=True, valor_por_defecto=datos[1])
+    nombre = leer_texto(f"Nombre [{datos[2]}]: ", permitir_vacio=True, valor_por_defecto=datos[2])
+    direccion = leer_texto(f"Direccion [{datos[3]}]: ", permitir_vacio=True, valor_por_defecto=datos[3])
+    telefono = leer_telefono(f"Telefono [{datos[4]}]: ", permitir_vacio=True, valor_por_defecto=datos[4])
+    correo = leer_correo(f"Correo [{datos[5]}]: ", permitir_vacio=True, valor_por_defecto=datos[5])
+    fecha_inicio = leer_fecha(f"Fecha inicio [{datos[6]}] (YYYY-MM-DD): ", permitir_vacio=True, valor_por_defecto=datos[6])
+    salario = leer_entero(f"Salario [{datos[7]}]: ", permitir_vacio=True, valor_por_defecto=datos[7])
+
+    mostrar_departamentos_existentes()
+    departamento_id = leer_entero(f"Departamento ID [{datos[8]}]: ", permitir_vacio=True, valor_por_defecto=datos[8])
+    if not CRUDEmpleado.existe_departamento(departamento_id):
+        print("El departamento indicado no existe.")
+        pausa()
+        return
+
+    empleado = Empleado(run, nombre, direccion, telefono, correo, fecha_inicio, salario, departamento_id, empleado_id)
+    if CRUDEmpleado.editar(empleado):
+        print("Empleado modificado correctamente.")
+    else:
+        print("No se pudo modificar el empleado.")
+    pausa()
+
+def eliminar_empleado():
+    limpiar_pantalla()
+    print("=== Empleados ===")
+    mostrar_empleados()
+    empleado_id = leer_entero("ID del empleado a eliminar: ", minimo=1)
+
+    if CRUDEmpleado.eliminar(empleado_id):
+        print("Empleado eliminado correctamente.")
+    else:
+        print("No se pudo eliminar el empleado.")
+    pausa()
+
+def ingresar_departamento():
+    limpiar_pantalla()
+    print("=== Departamentos ===")
+
+    nombre = leer_texto("Nombre: ")
+    descripcion = leer_texto("Descripcion: ")
+
+    if mostrar_empleados_existentes():
+        print("Si aun no quiere asignar gerente, use 0.")
+        gerente_empleado_id = leer_entero("Gerente empleado ID: ", minimo=0)
+        if gerente_empleado_id != 0 and not CRUDEmpleado.consultaParticular(gerente_empleado_id):
+            print("El gerente indicado no existe.")
+            pausa()
+            return
+    else:
+        gerente_empleado_id = 0
+
+    departamento = Departamento(nombre, gerente_empleado_id, descripcion)
+    nuevo_id = CRUDDepartamento.agregar(departamento)
+
+    if nuevo_id:
+        print(f"Departamento ingresado correctamente. ID: {nuevo_id}")
+    else:
+        print("No se pudo ingresar el departamento.")
+    pausa()
+
+def mostrar_departamentos():
+    limpiar_pantalla()
+    print("=== Departamentos ===")
+    datos = CRUDDepartamento.mostrarTodos()
+
+    if not datos:
+        print("No hay departamentos registrados.")
+        pausa()
+        return
+
+    print("{:<5} {:<25} {:<14} {:<25} {:<35}".format("ID", "NOMBRE", "GERENTE ID", "GERENTE", "DESCRIPCION"))
+    for departamento in datos:
+        print("{:<5} {:<25} {:<14} {:<25} {:<35}".format(
+            departamento[0], departamento[1], departamento[2], departamento[3], departamento[4]
+        ))
+    pausa()
+
+def mostrar_un_departamento():
+    limpiar_pantalla()
+    print("=== Departamentos ===")
+    departamento_id = leer_entero("ID del departamento: ", minimo=1)
+    departamento = CRUDDepartamento.consultaParticular(departamento_id)
+
+    if not departamento:
+        print("Departamento no encontrado.")
+        pausa()
+        return
+
+    print(f"ID: {departamento[0]}")
+    print(f"Nombre: {departamento[1]}")
+    print(f"Gerente ID: {departamento[2]}")
+    print(f"Gerente: {departamento[3]}")
+    print(f"Descripcion: {departamento[4]}")
+    pausa()
+
+def modificar_departamento():
+    limpiar_pantalla()
+    print("=== Departamentos ===")
+    departamento_id = leer_entero("ID del departamento a modificar: ", minimo=1)
+    datos = CRUDDepartamento.consultaParticular(departamento_id)
+
+    if not datos:
+        print("Departamento no encontrado.")
+        pausa()
+        return
+
+    print("Deje vacio para mantener el valor actual.")
+    nombre = leer_texto(f"Nombre [{datos[1]}]: ", permitir_vacio=True, valor_por_defecto=datos[1])
+    descripcion = leer_texto(f"Descripcion [{datos[4]}]: ", permitir_vacio=True, valor_por_defecto=datos[4])
+    if mostrar_empleados_existentes():
+        print("Si no desea gerente, use 0.")
+        gerente_empleado_id = leer_entero(f"Gerente empleado ID [{datos[2]}]: ", permitir_vacio=True, valor_por_defecto=datos[2])
+        if gerente_empleado_id != 0 and not CRUDEmpleado.consultaParticular(gerente_empleado_id):
+            print("El gerente indicado no existe.")
+            pausa()
+            return
+    else:
+        gerente_empleado_id = 0
+
+    departamento = Departamento(nombre, gerente_empleado_id, descripcion, departamento_id)
+    if CRUDDepartamento.editar(departamento):
+        print("Departamento modificado correctamente.")
+    else:
+        print("No se pudo modificar el departamento.")
+    pausa()
+
+def eliminar_departamento():
+    limpiar_pantalla()
+    print("=== Departamentos ===")
+    mostrar_departamentos()
+    departamento_id = leer_entero("ID del departamento a eliminar: ", minimo=1)
+
+    if CRUDDepartamento.eliminar(departamento_id):
+        print("Departamento eliminado correctamente.")
+    else:
+        print("No se pudo eliminar el departamento.")
+    pausa()
+
+def ingresar_proyecto():
+    limpiar_pantalla()
+    print("=== Proyectos ===")
+    nombre = leer_texto("Nombre: ")
+    descripcion = leer_texto("Descripcion: ")
+    fecha_inicio = leer_fecha("Fecha de inicio (YYYY-MM-DD): ")
+
+    proyecto = Proyecto(nombre, descripcion, fecha_inicio)
+    nuevo_id = CRUDProyecto.agregar(proyecto)
+    if nuevo_id:
+        print(f"Proyecto ingresado correctamente. ID: {nuevo_id}")
+    else:
+        print("No se pudo ingresar el proyecto.")
+    pausa()
+
+
+def mostrar_proyectos():
+    limpiar_pantalla()
+    print("=== Proyectos ===")
+    datos = CRUDProyecto.mostrarTodos()
+
+    if not datos:
+        print("No hay proyectos registrados.")
+        pausa()
+        return
+
+    print("{:<5} {:<25} {:<45} {:<12}".format("ID", "NOMBRE", "DESCRIPCION", "INICIO"))
+    for proyecto in datos:
+        print("{:<5} {:<25} {:<45} {:<12}".format(proyecto[0], proyecto[1], proyecto[2], proyecto[3]))
+    pausa()
+
+
+def modificar_proyecto():
+    limpiar_pantalla()
+    print("=== Proyectos ===")
+    proyecto_id = leer_entero("ID del proyecto a modificar: ", minimo=1)
+    datos = CRUDProyecto.consultaParticular(proyecto_id)
+
+    if not datos:
+        print("Proyecto no encontrado.")
+        pausa()
+        return
+
+    print("Deje vacio para mantener el valor actual.")
+    nombre = leer_texto(f"Nombre [{datos[1]}]: ", permitir_vacio=True, valor_por_defecto=datos[1])
+    descripcion = leer_texto(f"Descripcion [{datos[2]}]: ", permitir_vacio=True, valor_por_defecto=datos[2])
+    fecha_inicio = leer_fecha(f"Fecha de inicio [{datos[3]}] (YYYY-MM-DD): ", permitir_vacio=True, valor_por_defecto=datos[3])
+
+    proyecto = Proyecto(nombre, descripcion, fecha_inicio, proyecto_id)
+    if CRUDProyecto.editar(proyecto):
+        print("Proyecto modificado correctamente.")
+    else:
+        print("No se pudo modificar el proyecto.")
+    pausa()
+
+def eliminar_proyecto():
+    limpiar_pantalla()
+    print("=== Proyectos ===")
+    mostrar_proyectos()
+    proyecto_id = leer_entero("ID del proyecto a eliminar: ", minimo=1)
+
+    if CRUDProyecto.eliminar(proyecto_id):
+        print("Proyecto eliminado correctamente.")
+    else:
+        print("No se pudo eliminar el proyecto.")
+    pausa()
+
+def ingresar_registro_tiempo():
+    limpiar_pantalla()
+    print("=== Registro Tiempo ===")
+
+    if not mostrar_empleados_existentes():
+        pausa()
+        return
+    empleado_id = leer_entero("Empleado ID: ", minimo=1)
+    if not CRUDEmpleado.consultaParticular(empleado_id):
+        print("El empleado indicado no existe.")
+        pausa()
+        return
+
+    if not mostrar_proyectos_existentes():
+        pausa()
+        return
+    proyecto_id = leer_entero("Proyecto ID: ", minimo=1)
+    if not CRUDProyecto.consultaParticular(proyecto_id):
+        print("El proyecto indicado no existe.")
+        pausa()
+        return
+
+    fecha = leer_fecha("Fecha (YYYY-MM-DD): ")
+    horas = leer_entero("Horas: ", minimo=0)
+    descripcion = leer_texto("Descripcion: ")
+
+    registro = RegistroTiempo(empleado_id, proyecto_id, fecha, horas, descripcion)
+    nuevo_id = CRUDTiempo.agregar(registro)
+    if nuevo_id:
+        print(f"Registro ingresado correctamente. ID: {nuevo_id}")
+    else:
+        print("No se pudo ingresar el registro.")
+    pausa()
+
+def mostrar_registros_por_empleado():
+    limpiar_pantalla()
+    print("=== Registro Tiempo ===")
+    empleado_id = leer_entero("Empleado ID: ", minimo=1)
+    registros = CRUDTiempo.mostrarPorEmpleado(empleado_id)
+
+    if not registros:
+        print("No hay registros para ese empleado.")
+        pausa()
+        return
+
+    print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<8} {:<35}".format(
+        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "HORAS", "DESCRIPCION"
+    ))
+    for registro in registros:
+        print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<8} {:<35}".format(
+            registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7]
+        ))
+    pausa()
+
+def asignar_empleado_a_proyecto():
+    limpiar_pantalla()
+    print("=== Asignación de empleado a proyectos ===")
+
+    if not mostrar_empleados_existentes():
+        pausa()
+        return
+    empleado_id = leer_entero("Empleado ID: ", minimo=1)
+    if not CRUDEmpleado.consultaParticular(empleado_id):
+        print("El empleado indicado no existe.")
+        pausa()
+        return
+
+    if not mostrar_proyectos_existentes():
+        pausa()
+        return
+    proyecto_id = leer_entero("Proyecto ID: ", minimo=1)
+    if not CRUDProyecto.consultaParticular(proyecto_id):
+        print("El proyecto indicado no existe.")
+        pausa()
+        return
+
+    fecha_asignacion = leer_fecha("Fecha asignacion (YYYY-MM-DD): ")
+    rol = leer_texto("Rol: ")
+
+    asignacion = AsignacionEmp(empleado_id, proyecto_id, fecha_asignacion, rol)
+    nuevo_id = CRUDAsignacion_emp.agregar(asignacion)
+    if nuevo_id:
+        print(f"Asignación ingresada correctamente. ID: {nuevo_id}")
+    else:
+        print("No se pudo ingresar la asignación.")
+    pausa()
+
+def mostrar_asignaciones():
+    limpiar_pantalla()
+    print("=== Asignación de empleado a proyectos ===")
+    datos = CRUDAsignacion_emp.mostrarTodos()
+
+    if not datos:
+        print("No hay asignaciones registradas.")
+        pausa()
+        return
+
+    print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<20}".format(
+        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "ROL"
+    ))
+    for asignacion in datos:
+        print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<20}".format(
+            asignacion[0], asignacion[1], asignacion[2], asignacion[3], asignacion[4], asignacion[5], asignacion[6]
+        ))
+    pausa()
+
+def gestion_empleados():
+    while True:
+        limpiar_pantalla()
+        menu_empleados()
+        opcion = leer_entero("Ingrese opción: ", minimo=1, maximo=6)
+
+        if opcion == 1:
+            ingresar_empleado()
+        elif opcion == 2:
+            mostrar_empleados()
+        elif opcion == 3:
+            mostrar_un_empleado()
+        elif opcion == 4:
+            modificar_empleado()
+        elif opcion == 5:
+            eliminar_empleado()
+        elif opcion == 6:
+            break
+
+def gestion_departamentos():
+    while True:
+        limpiar_pantalla()
+        menu_departamentos()
+        opcion = leer_entero("Ingrese opción: ", minimo=1, maximo=6)
+
+        if opcion == 1:
+            ingresar_departamento()
+        elif opcion == 2:
+            mostrar_departamentos()
+        elif opcion == 3:
+            mostrar_un_departamento()
+        elif opcion == 4:
+            modificar_departamento()
+        elif opcion == 5:
+            eliminar_departamento()
+        elif opcion == 6:
+            break
+
+def gestion_proyectos():
+    while True:
+        limpiar_pantalla()
+        menu_proyectos()
+        opcion = leer_entero("Ingrese opción: ", minimo=1, maximo=5)
+
+        if opcion == 1:
+            ingresar_proyecto()
+        elif opcion == 2:
+            mostrar_proyectos()
+        elif opcion == 3:
+            modificar_proyecto()
+        elif opcion == 4:
+            eliminar_proyecto()
+        elif opcion == 5:
+            break
+
+
+def gestion_tiempo():
+    while True:
+        limpiar_pantalla()
+        menu_tiempo()
+        opcion = leer_entero("Opción: ", minimo=1, maximo=3)
+
+        if opcion == 1:
+            ingresar_registro_tiempo()
+        elif opcion == 2:
+            mostrar_registros_por_empleado()
+        elif opcion == 3:
+            break
+
+def gestion_asignacion():
+    while True:
+        limpiar_pantalla()
+        menu_asignacion()
+        opcion = leer_entero("Opción: ", minimo=1, maximo=4)
+
+        if opcion == 1:
+            asignar_empleado_a_proyecto()
+        elif opcion == 2:
+            print("Funcionalidad de desasignar pendiente.")
+            pausa()
+        elif opcion == 3:
+            mostrar_asignaciones()
+        elif opcion == 4:
+            break
+
+def main():
+    while True:
+        limpiar_pantalla()
+        menu_principal()
+        opcion = leer_entero("INGRESE OPCIÓN : ", minimo=1, maximo=6)
+
+        if opcion == 1:
+            gestion_empleados()
+        elif opcion == 2:
+            gestion_departamentos()
+        elif opcion == 3:
+            gestion_proyectos()
+        elif opcion == 4:
+            gestion_tiempo()
+        elif opcion == 5:
+            gestion_asignacion()
+        elif opcion == 6:
+            break
+
+if __name__ == "__main__":
+    main()

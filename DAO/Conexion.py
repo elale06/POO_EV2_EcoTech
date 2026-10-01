@@ -2,6 +2,8 @@ import pymysql
 
 class Conexion:
     def __init__(self, host, user, password, db):
+        self.db = None
+        self.cursor = None
         try:
             self.db = pymysql.connect(
                 host=host,
