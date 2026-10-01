@@ -78,9 +78,9 @@ def eliminar(empleado_id):
     try:
         con = Conexion(host, user, password, db)
         sql = "DELETE FROM empleado WHERE USER_ID=%s"
-        con.ejecuta_query(sql, (empleado_id,))
+        cursor = con.ejecuta_query(sql, (empleado_id,))
         con.commit()
-        return True
+        return bool(cursor and cursor.rowcount > 0)
     except Exception:
         if con:
             con.rollback()

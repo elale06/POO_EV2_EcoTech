@@ -77,6 +77,13 @@ def leer_telefono(mensaje, permitir_vacio=False, valor_por_defecto=None):
             return int(texto)
         print("Telefono inválido. Ingrese solo números, entre 7 y 15 dígitos.")
 
+
+def recortar_texto(valor, maximo):
+    texto = str(valor)
+    if len(texto) <= maximo:
+        return texto
+    return texto[: maximo - 3] + "..."
+
 def mostrar_departamentos_existentes():
     datos = CRUDDepartamento.mostrarTodos()
     if not datos:
@@ -209,13 +216,25 @@ def mostrar_empleados():
         pausa()
         return
 
-    print("{:<5} {:<15} {:<25} {:<20} {:<12} {:<25} {:<12} {:<12} {:<14} {:<20}".format(
+    print("=" * 150)
+    print("{:<5} {:<13} {:<18} {:<22} {:<12} {:<25} {:<12} {:>10} {:<10} {:<18}".format(
         "ID", "RUN", "NOMBRE", "DIRECCION", "TELF", "CORREO", "INICIO", "SALARIO", "DEPTO ID", "DEPTO"
     ))
+    print("=" * 150)
     for empleado in datos:
-        print("{:<5} {:<15} {:<25} {:<20} {:<12} {:<25} {:<12} {:<12} {:<14} {:<20}".format(
-            empleado[0], empleado[1], empleado[2], empleado[3], empleado[4], empleado[5], empleado[6], empleado[7], empleado[8], empleado[9]
+        print("{:<5} {:<13} {:<18} {:<22} {:<12} {:<25} {:<12} {:>10} {:<10} {:<18}".format(
+            empleado[0],
+            recortar_texto(empleado[1], 13),
+            recortar_texto(empleado[2], 18),
+            recortar_texto(empleado[3], 22),
+            recortar_texto(empleado[4], 12),
+            recortar_texto(empleado[5], 25),
+            recortar_texto(empleado[6], 12),
+            empleado[7],
+            empleado[8],
+            recortar_texto(empleado[9], 18)
         ))
+    print("=" * 150)
     pausa()
 
 def mostrar_un_empleado():
@@ -281,6 +300,11 @@ def eliminar_empleado():
     mostrar_empleados()
     empleado_id = leer_entero("ID del empleado a eliminar: ", minimo=1)
 
+    if not CRUDEmpleado.consultaParticular(empleado_id):
+        print("Empleado no encontrado.")
+        pausa()
+        return
+
     if CRUDEmpleado.eliminar(empleado_id):
         print("Empleado eliminado correctamente.")
     else:
@@ -323,11 +347,18 @@ def mostrar_departamentos():
         pausa()
         return
 
-    print("{:<5} {:<25} {:<14} {:<25} {:<35}".format("ID", "NOMBRE", "GERENTE ID", "GERENTE", "DESCRIPCION"))
+    print("=" * 110)
+    print("{:<5} {:<24} {:<12} {:<22} {:<45}".format("ID", "NOMBRE", "GERENTE ID", "GERENTE", "DESCRIPCION"))
+    print("=" * 110)
     for departamento in datos:
-        print("{:<5} {:<25} {:<14} {:<25} {:<35}".format(
-            departamento[0], departamento[1], departamento[2], departamento[3], departamento[4]
+        print("{:<5} {:<24} {:<12} {:<22} {:<45}".format(
+            departamento[0],
+            recortar_texto(departamento[1], 24),
+            departamento[2],
+            recortar_texto(departamento[3], 22),
+            recortar_texto(departamento[4], 45),
         ))
+    print("=" * 110)
     pausa()
 
 def mostrar_un_departamento():
@@ -417,9 +448,17 @@ def mostrar_proyectos():
         pausa()
         return
 
-    print("{:<5} {:<25} {:<45} {:<12}".format("ID", "NOMBRE", "DESCRIPCION", "INICIO"))
+    print("=" * 95)
+    print("{:<5} {:<25} {:<48} {:<12}".format("ID", "NOMBRE", "DESCRIPCION", "INICIO"))
+    print("=" * 95)
     for proyecto in datos:
-        print("{:<5} {:<25} {:<45} {:<12}".format(proyecto[0], proyecto[1], proyecto[2], proyecto[3]))
+        print("{:<5} {:<25} {:<48} {:<12}".format(
+            proyecto[0],
+            recortar_texto(proyecto[1], 25),
+            recortar_texto(proyecto[2], 48),
+            proyecto[3],
+        ))
+    print("=" * 95)
     pausa()
 
 
@@ -503,13 +542,23 @@ def mostrar_registros_por_empleado():
         pausa()
         return
 
-    print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<8} {:<35}".format(
-        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "HORAS", "DESCRIPCION"
+    print("=" * 120)
+    print("{:<5} {:<10} {:<20} {:<10} {:<22} {:<12} {:>8} {:<35}".format(
+        "ID", "EMP", "EMPLEADO", "PROY", "PROYECTO", "FECHA", "HORAS", "DESCRIPCION"
     ))
+    print("=" * 120)
     for registro in registros:
-        print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<8} {:<35}".format(
-            registro[0], registro[1], registro[2], registro[3], registro[4], registro[5], registro[6], registro[7]
+        print("{:<5} {:<10} {:<20} {:<10} {:<22} {:<12} {:>8} {:<35}".format(
+            registro[0],
+            registro[1],
+            recortar_texto(registro[2], 20),
+            registro[3],
+            recortar_texto(registro[4], 22),
+            registro[5],
+            registro[6],
+            recortar_texto(registro[7], 35),
         ))
+    print("=" * 120)
     pausa()
 
 def asignar_empleado_a_proyecto():
@@ -547,7 +596,7 @@ def asignar_empleado_a_proyecto():
 
 def mostrar_asignaciones():
     limpiar_pantalla()
-    print("=== Asignación de empleado a proyectos ===")
+    print("=== Asignaciones Empleado-Proyecto ===")
     datos = CRUDAsignacion_emp.mostrarTodos()
 
     if not datos:
@@ -555,13 +604,22 @@ def mostrar_asignaciones():
         pausa()
         return
 
-    print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<20}".format(
-        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "ROL"
+    print("=" * 110)
+    print("{:<5} {:<10} {:<22} {:<10} {:<22} {:<12} {:<25}".format(
+        "ID", "EMP", "EMPLEADO", "PROY", "PROYECTO", "FECHA", "ROL"
     ))
+    print("=" * 110)
     for asignacion in datos:
-        print("{:<5} {:<12} {:<25} {:<12} {:<25} {:<12} {:<20}".format(
-            asignacion[0], asignacion[1], asignacion[2], asignacion[3], asignacion[4], asignacion[5], asignacion[6]
+        print("{:<5} {:<10} {:<22} {:<10} {:<22} {:<12} {:<25}".format(
+            asignacion[0],
+            asignacion[1],
+            recortar_texto(asignacion[2], 22),
+            asignacion[3],
+            recortar_texto(asignacion[4], 22),
+            asignacion[5],
+            recortar_texto(asignacion[6], 25),
         ))
+    print("=" * 110)
     pausa()
 
 def gestion_empleados():
