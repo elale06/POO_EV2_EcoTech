@@ -119,6 +119,20 @@ def consultaParticular(departamento_id):
         if con:
             con.desconectar()
 
+
+def existe_gerente_empleado(empleado_id):
+    con = None
+    try:
+        con = Conexion(host, user, password, db)
+        sql = "SELECT 1 FROM empleado WHERE USER_ID=%s"
+        cursor = con.ejecuta_query(sql, (empleado_id,))
+        return cursor.fetchone() is not None if cursor else False
+    except Exception:
+        return False
+    finally:
+        if con:
+            con.desconectar()
+
 def existe_departamentos():
     con = None
     try:

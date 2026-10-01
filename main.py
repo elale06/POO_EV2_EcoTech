@@ -52,6 +52,7 @@ def leer_fecha(mensaje, permitir_vacio=False, valor_por_defecto=None):
         except ValueError:
             print("Ingrese una fecha válida con formato YYYY-MM-DD.")
 
+# Verifica que el RUN tenga formato chileno básico: 12345678-9.
 def leer_run(mensaje, permitir_vacio=False, valor_por_defecto=None):
     patron = re.compile(r"^[0-9]{7,8}-[0-9kK]$")
     while True:
@@ -62,6 +63,7 @@ def leer_run(mensaje, permitir_vacio=False, valor_por_defecto=None):
             return texto
         print("RUN inválido. Use formato 12345678-9.")
 
+# Verifica que el correo tenga dominio y TLD válidos.
 def leer_correo(mensaje, permitir_vacio=False, valor_por_defecto=None):
     patron = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
     while True:
@@ -73,6 +75,7 @@ def leer_correo(mensaje, permitir_vacio=False, valor_por_defecto=None):
         print("Correo inválido. Ejemplo: nombre@correo.com")
 
 
+# Repite la lectura hasta encontrar un departamento que exista en la base.
 def leer_departamento_existente(mensaje, permitir_vacio=False, valor_por_defecto=None):
     while True:
         departamento_id = leer_entero(mensaje, minimo=1, permitir_vacio=permitir_vacio, valor_por_defecto=valor_por_defecto)
@@ -80,6 +83,7 @@ def leer_departamento_existente(mensaje, permitir_vacio=False, valor_por_defecto
             return departamento_id
         print("El departamento indicado no existe. Intente nuevamente.")
 
+# Verifica que el teléfono tenga solo números y una longitud razonable.
 def leer_telefono(mensaje, permitir_vacio=False, valor_por_defecto=None):
     patron = re.compile(r"^[0-9]{7,15}$")
     while True:
@@ -97,9 +101,11 @@ def recortar_texto(valor, maximo):
         return texto
     return texto[: maximo - 3] + "..."
 
+# Normaliza fechas para que las tablas se vean consistentes.
 def formatear_fecha(valor):
     return valor.strftime("%Y-%m-%d") if hasattr(valor, "strftime") else str(valor)
 
+# Repite la lectura hasta que el ID exista en la tabla indicada.
 def leer_id_existente(mensaje, existe_func, entidad):
     while True:
         valor = leer_entero(mensaje, minimo=1)
@@ -107,12 +113,13 @@ def leer_id_existente(mensaje, existe_func, entidad):
             return valor
         print(f"El {entidad} indicado no existe. Intente nuevamente.")
 
+# Permite asignar gerente o usar 0 si no quiere definirlo.
 def leer_gerente_existente(mensaje, valor_por_defecto=None, permitir_vacio=False):
     while True:
         gerente_id = leer_entero(mensaje, minimo=0, permitir_vacio=permitir_vacio, valor_por_defecto=valor_por_defecto)
         if gerente_id == 0:
             return 0
-        if CRUDEmpleado.existe_empleado(gerente_id):
+        if CRUDDepartamento.existe_gerente_empleado(gerente_id):
             return gerente_id
         print("El empleado indicado no existe. Intente nuevamente.")
 
@@ -265,10 +272,11 @@ def mostrar_empleados():
     print("=" * 150)
     pausa()
 
+# Vista individual del empleado, útil para depurar un ID específico.
 def mostrar_un_empleado():
     limpiar_pantalla()
     print("=== Empleados ===")
-    empleado_id = leer_entero("ID del empleado: ", minimo=1)
+    empleado_id = leer_id_existente("ID del empleado: ", CRUDEmpleado.existe_empleado, "empleado")
     empleado = CRUDEmpleado.consultaParticular(empleado_id)
 
     if not empleado:
@@ -288,10 +296,11 @@ def mostrar_un_empleado():
     print(f"Departamento: {empleado[9]}")
     pausa()
 
+# Formulario de edición: primero carga el registro y luego permite cambiar campos.
 def modificar_empleado():
     limpiar_pantalla()
     print("=== Empleados ===")
-    empleado_id = leer_entero("ID del empleado a modificar: ", minimo=1)
+    empleado_id = leer_id_existente("ID del empleado a modificar: ", CRUDEmpleado.existe_empleado, "empleado")
     datos = CRUDEmpleado.consultaParticular(empleado_id)
 
     if not datos:
@@ -322,16 +331,12 @@ def modificar_empleado():
         print("No se pudo modificar el empleado.")
     pausa()
 
+# Borrado validado: no continúa si el empleado no existe.
 def eliminar_empleado():
     limpiar_pantalla()
     print("=== Empleados ===")
     mostrar_empleados()
-    empleado_id = leer_entero("ID del empleado a eliminar: ", minimo=1)
-
-    if not CRUDEmpleado.existe_empleado(empleado_id):
-        print("Empleado no encontrado.")
-        pausa()
-        return
+    empleado_id = leer_id_existente("ID del empleado a eliminar: ", CRUDEmpleado.existe_empleado, "empleado")
 
     if CRUDEmpleado.eliminar(empleado_id):
         print("Empleado eliminado correctamente.")
@@ -339,6 +344,7 @@ def eliminar_empleado():
         print("No se pudo eliminar el empleado.")
     pausa()
 
+# Alta de departamento con gerente opcional.
 def ingresar_departamento():
     limpiar_pantalla()
     print("=== Departamentos ===")
@@ -361,6 +367,7 @@ def ingresar_departamento():
         print("No se pudo ingresar el departamento.")
     pausa()
 
+# Tabla resumida de departamentos, con recorte para que no se desordene.
 def mostrar_departamentos():
     limpiar_pantalla()
     print("=== Departamentos ===")
@@ -385,10 +392,11 @@ def mostrar_departamentos():
     print("=" * 110)
     pausa()
 
+# Consulta puntual de un departamento por su ID.
 def mostrar_un_departamento():
     limpiar_pantalla()
     print("=== Departamentos ===")
-    departamento_id = leer_entero("ID del departamento: ", minimo=1)
+    departamento_id = leer_id_existente("ID del departamento: ", CRUDDepartamento.existe_departamento, "departamento")
     departamento = CRUDDepartamento.consultaParticular(departamento_id)
 
     if not departamento:
@@ -403,10 +411,11 @@ def mostrar_un_departamento():
     print(f"Descripcion: {departamento[4]}")
     pausa()
 
+# Edición de departamento, conservando valores si se deja vacío.
 def modificar_departamento():
     limpiar_pantalla()
     print("=== Departamentos ===")
-    departamento_id = leer_entero("ID del departamento a modificar: ", minimo=1)
+    departamento_id = leer_id_existente("ID del departamento a modificar: ", CRUDDepartamento.existe_departamento, "departamento")
     datos = CRUDDepartamento.consultaParticular(departamento_id)
 
     if not datos:
@@ -434,6 +443,7 @@ def modificar_departamento():
         print("No se pudo modificar el departamento.")
     pausa()
 
+# Eliminación validada de departamento.
 def eliminar_departamento():
     limpiar_pantalla()
     print("=== Departamentos ===")
@@ -446,6 +456,7 @@ def eliminar_departamento():
         print("No se pudo eliminar el departamento.")
     pausa()
 
+# Alta de proyecto.
 def ingresar_proyecto():
     limpiar_pantalla()
     print("=== Proyectos ===")
@@ -462,6 +473,7 @@ def ingresar_proyecto():
     pausa()
 
 
+# Listado de proyectos con fecha formateada.
 def mostrar_proyectos():
     limpiar_pantalla()
     print("=== Proyectos ===")
@@ -486,6 +498,7 @@ def mostrar_proyectos():
     pausa()
 
 
+# Edición de proyecto.
 def modificar_proyecto():
     limpiar_pantalla()
     print("=== Proyectos ===")
@@ -509,6 +522,7 @@ def modificar_proyecto():
         print("No se pudo modificar el proyecto.")
     pausa()
 
+# Eliminación validada de proyecto.
 def eliminar_proyecto():
     limpiar_pantalla()
     print("=== Proyectos ===")
@@ -521,6 +535,7 @@ def eliminar_proyecto():
         print("No se pudo eliminar el proyecto.")
     pausa()
 
+# Registro de horas trabajadas por empleado y proyecto.
 def ingresar_registro_tiempo():
     limpiar_pantalla()
     print("=== Registro Tiempo ===")
@@ -547,6 +562,7 @@ def ingresar_registro_tiempo():
         print("No se pudo ingresar el registro.")
     pausa()
 
+# Historial de tiempo por empleado.
 def mostrar_registros_por_empleado():
     limpiar_pantalla()
     print("=== Registro Tiempo ===")
@@ -563,7 +579,7 @@ def mostrar_registros_por_empleado():
 
     print("=" * 120)
     print("{:<5} {:<10} {:<20} {:<10} {:<22} {:<12} {:>8} {:<35}".format(
-        "ID", "EMP", "EMPLEADO", "PROY", "PROYECTO", "FECHA", "HORAS", "DESCRIPCION"
+        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "HORAS", "DESCRIPCION"
     ))
     print("=" * 120)
     for registro in registros:
@@ -573,13 +589,14 @@ def mostrar_registros_por_empleado():
             recortar_texto(registro[2], 20),
             registro[3],
             recortar_texto(registro[4], 22),
-            registro[5],
+            formatear_fecha(registro[5]),
             registro[6],
             recortar_texto(registro[7], 35),
         ))
     print("=" * 120)
     pausa()
 
+# Asignación de un empleado a un proyecto.
 def asignar_empleado_a_proyecto():
     limpiar_pantalla()
     print("=== Asignaciones Empleado-Proyecto ===")
@@ -605,6 +622,7 @@ def asignar_empleado_a_proyecto():
         print("No se pudo ingresar la asignación.")
     pausa()
 
+# Historial de asignaciones por empleado.
 def mostrar_asignaciones():
     limpiar_pantalla()
     print("=== Asignaciones Empleado-Proyecto ===")
@@ -621,7 +639,7 @@ def mostrar_asignaciones():
 
     print("=" * 110)
     print("{:<5} {:<10} {:<22} {:<10} {:<22} {:<12} {:<25}".format(
-        "ID", "EMP", "EMPLEADO", "PROY", "PROYECTO", "FECHA", "ROL"
+        "ID", "EMP ID", "EMPLEADO", "PROY ID", "PROYECTO", "FECHA", "ROL"
     ))
     print("=" * 110)
     for asignacion in datos:
