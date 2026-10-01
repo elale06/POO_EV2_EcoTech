@@ -38,12 +38,17 @@ def leer_texto(mensaje, permitir_vacio=False, valor_por_defecto=None):
     return texto
 
 def leer_fecha(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    año_max = 2026
     while True:
         texto = input(mensaje).strip()
         if permitir_vacio and texto == "":
             return valor_por_defecto
         try:
-            return datetime.strptime(texto, "%Y-%m-%d").date()
+            fecha = datetime.strptime(texto, "%Y-%m-%d").date()
+            if fecha.year > año_max:
+                print(f"Ingrese una fecha con año menor o igual a {año_max}.")
+                continue
+            return fecha
         except ValueError:
             print("Ingrese una fecha válida con formato YYYY-MM-DD.")
 
@@ -58,7 +63,7 @@ def leer_run(mensaje, permitir_vacio=False, valor_por_defecto=None):
         print("RUN inválido. Use formato 12345678-9.")
 
 def leer_correo(mensaje, permitir_vacio=False, valor_por_defecto=None):
-    patron = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    patron = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
     while True:
         texto = input(mensaje).strip()
         if permitir_vacio and texto == "":
@@ -66,6 +71,14 @@ def leer_correo(mensaje, permitir_vacio=False, valor_por_defecto=None):
         if patron.match(texto):
             return texto
         print("Correo inválido. Ejemplo: nombre@correo.com")
+
+
+def leer_departamento_existente(mensaje, permitir_vacio=False, valor_por_defecto=None):
+    while True:
+        departamento_id = leer_entero(mensaje, minimo=1, permitir_vacio=permitir_vacio, valor_por_defecto=valor_por_defecto)
+        if CRUDEmpleado.existe_departamento(departamento_id):
+            return departamento_id
+        print("El departamento indicado no existe. Intente nuevamente.")
 
 def leer_telefono(mensaje, permitir_vacio=False, valor_por_defecto=None):
     patron = re.compile(r"^[0-9]{7,15}$")
@@ -191,11 +204,7 @@ def ingresar_empleado():
     salario = leer_entero("Salario: ", minimo=0)
 
     mostrar_departamentos_existentes()
-    departamento_id = leer_entero("Departamento ID: ", minimo=1)
-    if not CRUDEmpleado.existe_departamento(departamento_id):
-        print("El departamento indicado no existe.")
-        pausa()
-        return
+    departamento_id = leer_departamento_existente("Departamento ID: ")
 
     empleado = Empleado(run, nombre, direccion, telefono, correo, fecha_inicio, salario, departamento_id)
     nuevo_id = CRUDEmpleado.agregar(empleado)
@@ -281,11 +290,11 @@ def modificar_empleado():
     salario = leer_entero(f"Salario [{datos[7]}]: ", permitir_vacio=True, valor_por_defecto=datos[7])
 
     mostrar_departamentos_existentes()
-    departamento_id = leer_entero(f"Departamento ID [{datos[8]}]: ", permitir_vacio=True, valor_por_defecto=datos[8])
-    if not CRUDEmpleado.existe_departamento(departamento_id):
-        print("El departamento indicado no existe.")
-        pausa()
-        return
+    departamento_id = leer_departamento_existente(
+        f"Departamento ID [{datos[8]}]: ",
+        permitir_vacio=True,
+        valor_por_defecto=datos[8],
+    )
 
     empleado = Empleado(run, nombre, direccion, telefono, correo, fecha_inicio, salario, departamento_id, empleado_id)
     if CRUDEmpleado.editar(empleado):
