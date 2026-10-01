@@ -53,9 +53,9 @@ def eliminar(proyecto_id):
     try:
         con = Conexion(host, user, password, db)
         sql = "DELETE FROM proyecto WHERE USER_ID=%s"
-        con.ejecuta_query(sql, (proyecto_id,))
+        cursor = con.ejecuta_query(sql, (proyecto_id,))
         con.commit()
-        return True
+        return bool(cursor and cursor.rowcount > 0)
     except Exception:
         if con:
             con.rollback()
@@ -94,6 +94,20 @@ def consultaParticular(proyecto_id):
         return cursor.fetchone() if cursor else None
     except Exception:
         return None
+    finally:
+        if con:
+            con.desconectar()
+
+
+def existe_proyecto(proyecto_id):
+    con = None
+    try:
+        con = Conexion(host, user, password, db)
+        sql = "SELECT 1 FROM proyecto WHERE USER_ID=%s"
+        cursor = con.ejecuta_query(sql, (proyecto_id,))
+        return cursor.fetchone() is not None if cursor else False
+    except Exception:
+        return False
     finally:
         if con:
             con.desconectar()

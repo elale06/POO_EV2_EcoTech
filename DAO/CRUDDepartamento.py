@@ -62,9 +62,9 @@ def eliminar(departamento_id):
     try:
         con = Conexion(host, user, password, db)
         sql = "DELETE FROM departamento WHERE USER_ID=%s"
-        con.ejecuta_query(sql, (departamento_id,))
+        cursor = con.ejecuta_query(sql, (departamento_id,))
         con.commit()
-        return True
+        return bool(cursor and cursor.rowcount > 0)
     except Exception:
         if con:
             con.rollback()
@@ -125,6 +125,20 @@ def existe_departamentos():
         con = Conexion(host, user, password, db)
         sql = "SELECT 1 FROM departamento LIMIT 1"
         cursor = con.ejecuta_query(sql)
+        return cursor.fetchone() is not None if cursor else False
+    except Exception:
+        return False
+    finally:
+        if con:
+            con.desconectar()
+
+
+def existe_departamento(departamento_id):
+    con = None
+    try:
+        con = Conexion(host, user, password, db)
+        sql = "SELECT 1 FROM departamento WHERE USER_ID=%s"
+        cursor = con.ejecuta_query(sql, (departamento_id,))
         return cursor.fetchone() is not None if cursor else False
     except Exception:
         return False

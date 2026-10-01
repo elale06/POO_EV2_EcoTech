@@ -97,6 +97,25 @@ def recortar_texto(valor, maximo):
         return texto
     return texto[: maximo - 3] + "..."
 
+def formatear_fecha(valor):
+    return valor.strftime("%Y-%m-%d") if hasattr(valor, "strftime") else str(valor)
+
+def leer_id_existente(mensaje, existe_func, entidad):
+    while True:
+        valor = leer_entero(mensaje, minimo=1)
+        if existe_func(valor):
+            return valor
+        print(f"El {entidad} indicado no existe. Intente nuevamente.")
+
+def leer_gerente_existente(mensaje, valor_por_defecto=None, permitir_vacio=False):
+    while True:
+        gerente_id = leer_entero(mensaje, minimo=0, permitir_vacio=permitir_vacio, valor_por_defecto=valor_por_defecto)
+        if gerente_id == 0:
+            return 0
+        if CRUDEmpleado.existe_empleado(gerente_id):
+            return gerente_id
+        print("El empleado indicado no existe. Intente nuevamente.")
+
 def mostrar_departamentos_existentes():
     datos = CRUDDepartamento.mostrarTodos()
     if not datos:
@@ -309,7 +328,7 @@ def eliminar_empleado():
     mostrar_empleados()
     empleado_id = leer_entero("ID del empleado a eliminar: ", minimo=1)
 
-    if not CRUDEmpleado.consultaParticular(empleado_id):
+    if not CRUDEmpleado.existe_empleado(empleado_id):
         print("Empleado no encontrado.")
         pausa()
         return
@@ -329,11 +348,7 @@ def ingresar_departamento():
 
     if mostrar_empleados_existentes():
         print("Si aun no quiere asignar gerente, use 0.")
-        gerente_empleado_id = leer_entero("Gerente empleado ID: ", minimo=0)
-        if gerente_empleado_id != 0 and not CRUDEmpleado.consultaParticular(gerente_empleado_id):
-            print("El gerente indicado no existe.")
-            pausa()
-            return
+        gerente_empleado_id = leer_gerente_existente("Gerente empleado ID: ")
     else:
         gerente_empleado_id = 0
 
@@ -423,7 +438,7 @@ def eliminar_departamento():
     limpiar_pantalla()
     print("=== Departamentos ===")
     mostrar_departamentos()
-    departamento_id = leer_entero("ID del departamento a eliminar: ", minimo=1)
+    departamento_id = leer_id_existente("ID del departamento a eliminar: ", CRUDDepartamento.existe_departamento, "departamento")
 
     if CRUDDepartamento.eliminar(departamento_id):
         print("Departamento eliminado correctamente.")
@@ -465,7 +480,7 @@ def mostrar_proyectos():
             proyecto[0],
             recortar_texto(proyecto[1], 25),
             recortar_texto(proyecto[2], 48),
-            proyecto[3],
+            formatear_fecha(proyecto[3]),
         ))
     print("=" * 95)
     pausa()
@@ -474,7 +489,7 @@ def mostrar_proyectos():
 def modificar_proyecto():
     limpiar_pantalla()
     print("=== Proyectos ===")
-    proyecto_id = leer_entero("ID del proyecto a modificar: ", minimo=1)
+    proyecto_id = leer_id_existente("ID del proyecto a modificar: ", CRUDProyecto.existe_proyecto, "proyecto")
     datos = CRUDProyecto.consultaParticular(proyecto_id)
 
     if not datos:
@@ -498,7 +513,7 @@ def eliminar_proyecto():
     limpiar_pantalla()
     print("=== Proyectos ===")
     mostrar_proyectos()
-    proyecto_id = leer_entero("ID del proyecto a eliminar: ", minimo=1)
+    proyecto_id = leer_id_existente("ID del proyecto a eliminar: ", CRUDProyecto.existe_proyecto, "proyecto")
 
     if CRUDProyecto.eliminar(proyecto_id):
         print("Proyecto eliminado correctamente.")
@@ -513,20 +528,12 @@ def ingresar_registro_tiempo():
     if not mostrar_empleados_existentes():
         pausa()
         return
-    empleado_id = leer_entero("Empleado ID: ", minimo=1)
-    if not CRUDEmpleado.consultaParticular(empleado_id):
-        print("El empleado indicado no existe.")
-        pausa()
-        return
+    empleado_id = leer_id_existente("Empleado ID: ", CRUDEmpleado.existe_empleado, "empleado")
 
     if not mostrar_proyectos_existentes():
         pausa()
         return
-    proyecto_id = leer_entero("Proyecto ID: ", minimo=1)
-    if not CRUDProyecto.consultaParticular(proyecto_id):
-        print("El proyecto indicado no existe.")
-        pausa()
-        return
+    proyecto_id = leer_id_existente("Proyecto ID: ", CRUDProyecto.existe_proyecto, "proyecto")
 
     fecha = leer_fecha("Fecha (YYYY-MM-DD): ")
     horas = leer_entero("Horas: ", minimo=0)
@@ -543,7 +550,10 @@ def ingresar_registro_tiempo():
 def mostrar_registros_por_empleado():
     limpiar_pantalla()
     print("=== Registro Tiempo ===")
-    empleado_id = leer_entero("Empleado ID: ", minimo=1)
+    if not mostrar_empleados_existentes():
+        pausa()
+        return
+    empleado_id = leer_id_existente("Empleado ID: ", CRUDEmpleado.existe_empleado, "empleado")
     registros = CRUDTiempo.mostrarPorEmpleado(empleado_id)
 
     if not registros:
@@ -572,25 +582,17 @@ def mostrar_registros_por_empleado():
 
 def asignar_empleado_a_proyecto():
     limpiar_pantalla()
-    print("=== Asignación de empleado a proyectos ===")
+    print("=== Asignaciones Empleado-Proyecto ===")
 
     if not mostrar_empleados_existentes():
         pausa()
         return
-    empleado_id = leer_entero("Empleado ID: ", minimo=1)
-    if not CRUDEmpleado.consultaParticular(empleado_id):
-        print("El empleado indicado no existe.")
-        pausa()
-        return
+    empleado_id = leer_id_existente("Empleado ID: ", CRUDEmpleado.existe_empleado, "empleado")
 
     if not mostrar_proyectos_existentes():
         pausa()
         return
-    proyecto_id = leer_entero("Proyecto ID: ", minimo=1)
-    if not CRUDProyecto.consultaParticular(proyecto_id):
-        print("El proyecto indicado no existe.")
-        pausa()
-        return
+    proyecto_id = leer_id_existente("Proyecto ID: ", CRUDProyecto.existe_proyecto, "proyecto")
 
     fecha_asignacion = leer_fecha("Fecha asignacion (YYYY-MM-DD): ")
     rol = leer_texto("Rol: ")
@@ -606,10 +608,14 @@ def asignar_empleado_a_proyecto():
 def mostrar_asignaciones():
     limpiar_pantalla()
     print("=== Asignaciones Empleado-Proyecto ===")
-    datos = CRUDAsignacion_emp.mostrarTodos()
+    if not mostrar_empleados_existentes():
+        pausa()
+        return
+    empleado_id = leer_id_existente("Empleado ID: ", CRUDEmpleado.existe_empleado, "empleado")
+    datos = CRUDAsignacion_emp.mostrarPorEmpleado(empleado_id)
 
     if not datos:
-        print("No hay asignaciones registradas.")
+        print("No hay asignaciones registradas para ese empleado.")
         pausa()
         return
 
@@ -625,7 +631,7 @@ def mostrar_asignaciones():
             recortar_texto(asignacion[2], 22),
             asignacion[3],
             recortar_texto(asignacion[4], 22),
-            asignacion[5],
+            formatear_fecha(asignacion[5]),
             recortar_texto(asignacion[6], 25),
         ))
     print("=" * 110)
